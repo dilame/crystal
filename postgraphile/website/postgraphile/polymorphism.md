@@ -171,6 +171,29 @@ comment on table polymorphic.relational_items is $$
   $$;
 ```
 
+### Default type
+
+By default every possible value of the discriminator column must have a
+matching `@type` tag; a value that has no matching tag would resolve to nothing
+(the `__typename` would be `null`). If you'd rather have such values resolve to
+a shared "default" object type — like the `default` case of a `switch`
+statement — add the `@defaultType` smart tag to the table:
+
+```sql
+comment on table polymorphic.relational_items is $$
+  @interface mode:relational type:type
+  @defaultType
+  @type TOPIC references:relational_topics
+  @type POST references:relational_posts
+  $$;
+```
+
+The default type is generated from the base table, implements the interface and
+exposes only the shared attributes of the base table (it does not join to any
+other table). Its name is derived from the base table via the
+`pgPolymorphismDefaultTypeName` inflector, so you can rename it (or any
+generated name) by overriding that inflector.
+
 ## @interface mode:union
 
 Sometimes you might have multiple independent tables that you want to be part

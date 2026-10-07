@@ -1,0 +1,251 @@
+"""
+A floating point number that requires more precision than IEEE 754 binary 64
+"""
+scalar BigFloat
+
+"""A location in a connection that can be used for resuming pagination."""
+scalar Cursor
+
+"""
+A point in time as described by the [ISO
+8601](https://en.wikipedia.org/wiki/ISO_8601) and, if it has a timezone, [RFC
+3339](https://datatracker.ietf.org/doc/html/rfc3339) standards. Input values
+that do not conform to both ISO 8601 and RFC 3339 may be coerced, which may lead
+to unexpected results.
+"""
+scalar Datetime
+
+interface Event {
+  actor: String
+  code: EventCode!
+  createdAt: Datetime!
+  id: Int!
+}
+
+enum EventCode {
+  CREATED
+  PAID
+  REFUNDED
+}
+
+"""
+A condition to be used against `Event` object types. All fields are tested for equality and combined with a logical ‘and.’
+"""
+input EventCondition {
+  """Checks for equality with the object’s `actor` field."""
+  actor: String
+
+  """Checks for equality with the object’s `code` field."""
+  code: EventCode
+
+  """Checks for equality with the object’s `createdAt` field."""
+  createdAt: Datetime
+
+  """Checks for equality with the object’s `id` field."""
+  id: Int
+}
+
+type EventDefault implements Event {
+  actor: String
+  code: EventCode!
+  createdAt: Datetime!
+  id: Int!
+}
+
+"""A connection to a list of `Event` values."""
+type EventsConnection {
+  """
+  A list of edges which contains the `Event` and cursor to aid in pagination.
+  """
+  edges: [EventsEdge]!
+
+  """A list of `Event` objects."""
+  nodes: [Event]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* `Event` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A `Event` edge in the connection."""
+type EventsEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `Event` at the end of the edge."""
+  node: Event
+}
+
+"""Methods to use when ordering `Event`."""
+enum EventsOrderBy {
+  ACTOR_ASC
+  ACTOR_DESC
+  CODE_ASC
+  CODE_DESC
+  CREATED_AT_ASC
+  CREATED_AT_DESC
+  ID_ASC
+  ID_DESC
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+}
+
+"""Information about pagination in a connection."""
+type PageInfo {
+  """When paginating forwards, the cursor to continue."""
+  endCursor: Cursor
+
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+
+  """When paginating backwards, the cursor to continue."""
+  startCursor: Cursor
+}
+
+type PaidEvent implements Event {
+  actor: String
+  amount: BigFloat!
+  code: EventCode!
+  createdAt: Datetime!
+  id: Int!
+}
+
+"""
+A condition to be used against `PaidEvent` object types. All fields are tested
+for equality and combined with a logical ‘and.’
+"""
+input PaidEventCondition {
+  """Checks for equality with the object’s `actor` field."""
+  actor: String
+
+  """Checks for equality with the object’s `amount` field."""
+  amount: BigFloat
+
+  """Checks for equality with the object’s `code` field."""
+  code: EventCode
+
+  """Checks for equality with the object’s `createdAt` field."""
+  createdAt: Datetime
+
+  """Checks for equality with the object’s `id` field."""
+  id: Int
+}
+
+"""A connection to a list of `PaidEvent` values."""
+type PaidEventsConnection {
+  """
+  A list of edges which contains the `PaidEvent` and cursor to aid in pagination.
+  """
+  edges: [PaidEventsEdge]!
+
+  """A list of `PaidEvent` objects."""
+  nodes: [PaidEvent]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* `PaidEvent` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A `PaidEvent` edge in the connection."""
+type PaidEventsEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `PaidEvent` at the end of the edge."""
+  node: PaidEvent
+}
+
+"""Methods to use when ordering `PaidEvent`."""
+enum PaidEventsOrderBy {
+  ACTOR_ASC
+  ACTOR_DESC
+  AMOUNT_ASC
+  AMOUNT_DESC
+  CODE_ASC
+  CODE_DESC
+  CREATED_AT_ASC
+  CREATED_AT_DESC
+  ID_ASC
+  ID_DESC
+  NATURAL
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+}
+
+"""The root query type which gives access points into the data universe."""
+type Query {
+  """Reads and enables pagination through a set of `Event`."""
+  allEvents(
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: EventCondition
+
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """The method to use when ordering `Event`."""
+    orderBy: [EventsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): EventsConnection
+
+  """Reads and enables pagination through a set of `PaidEvent`."""
+  allPaidEvents(
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: PaidEventCondition
+
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """The method to use when ordering `PaidEvent`."""
+    orderBy: [PaidEventsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): PaidEventsConnection
+
+  """Get a single `PaidEvent`."""
+  paidEventById(id: Int!): PaidEvent
+
+  """
+  Exposes the root query type nested one level down. This is helpful for Relay 1
+  which can only query top level fields if they are in a particular form.
+  """
+  query: Query!
+}

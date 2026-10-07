@@ -101,6 +101,13 @@ export interface PgCodecPolymorphismRelationalTypeSpec {
   relationName: string;
   // Currently assumes it's joined via PK, but we might expand that in future
 }
+export interface PgCodecPolymorphismRelationalDefaultTypeSpec {
+  /**
+   * The name of the GraphQL object type that discriminator values without a
+   * matching entry in `types` should resolve to.
+   */
+  name: string;
+}
 export interface PgCodecPolymorphismRelational<
   TAttributeName extends string = string,
 > {
@@ -109,6 +116,13 @@ export interface PgCodecPolymorphismRelational<
   types: {
     [typeKey: string]: PgCodecPolymorphismRelationalTypeSpec;
   };
+  /**
+   * When present, any discriminator value that has no matching entry in
+   * `types` resolves to this object type rather than to nothing. This object
+   * type implements the interface and exposes only the shared attributes of
+   * the base table (like `default` in a `switch` statement).
+   */
+  defaultType?: PgCodecPolymorphismRelationalDefaultTypeSpec;
 }
 
 export interface PgCodecPolymorphismUnion {

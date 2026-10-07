@@ -1,0 +1,82 @@
+%%{init: {'themeVariables': { 'fontSize': '12px'}}}%%
+graph TD
+    classDef path fill:#eee,stroke:#000,color:#000
+    classDef plan fill:#fff,stroke-width:1px,color:#000
+    classDef itemplan fill:#fff,stroke-width:2px,color:#000
+    classDef unbatchedplan fill:#dff,stroke-width:1px,color:#000
+    classDef sideeffectplan fill:#fcc,stroke-width:2px,color:#000
+    classDef bucket fill:#f6f6f6,color:#000,stroke-width:2px,text-align:left
+
+    subgraph "Buckets for queries/polymorphic/defaultType"
+    Bucket0("Bucket 0 (root)<br /><br />1: <br />ᐳ: 9, 10, 40, 43, 11<br />2: PgSelect[8]<br />3: Connection[12]<br />4: ConnectionItems[14]"):::bucket
+    Bucket1("Bucket 1 (nullableBoundary)<br />Deps: 12, 14, 11, 40, 43<br /><br />ROOT Connectionᐸ8ᐳ[12]"):::bucket
+    Bucket3("Bucket 3 (listItem)<br />Deps: 11, 40, 43<br /><br />ROOT __Item{3}ᐸ14ᐳ[17]"):::bucket
+    Bucket4("Bucket 4 (polymorphic)<br />__typename: Lambda[23]<br />Deps: 23, 11, 19, 40, 43, 18, 22, 36, 38"):::bucket
+    Bucket5("Bucket 5 (polymorphicPartition)<br />|PaidEvent<br />Deps: 11, 19, 40, 22, 36, 38<br />ᐳPaidEvent<br /><br />1: PgSelect[25]<br />ᐳ: List[41], Lambda[42]<br />2: PgSelectRows[30]<br />ᐳ: 29, 31, 46"):::bucket
+    Bucket6("Bucket 6 (polymorphicPartition)<br />|EventDefault<br />Deps: 43, 19, 18, 22, 36, 38<br />ᐳEventDefault"):::bucket
+    end
+    Bucket0 --> Bucket1
+    Bucket1 --> Bucket3
+    Bucket3 --> Bucket4
+    Bucket4 --> Bucket5 & Bucket6
+
+    %% plan dependencies
+    Object11{{"Object[11∈0] ➊<br />ᐸ{pgSettings,withPgClient}ᐳ<br />Dependents: 2"}}:::plan
+    Access9{{"Access[9∈0] ➊<br />ᐸ2.pgSettingsᐳ"}}:::plan
+    Access10{{"Access[10∈0] ➊<br />ᐸ2.withPgClientᐳ"}}:::plan
+    Access9 & Access10 --> Object11
+    PgSelect8[["PgSelect[8∈0] ➊<br />ᐸeventsᐳ<br />More deps:<br />- Object[11]"]]:::plan
+    __Value2["__Value[2∈0] ➊<br />ᐸcontextᐳ"]:::plan
+    __Value2 --> Access9
+    __Value2 --> Access10
+    Connection12[["Connection[12∈0] ➊<br />ᐸ8ᐳ"]]:::plan
+    PgSelect8 --> Connection12
+    ConnectionItems14[["ConnectionItems[14∈0] ➊"]]:::plan
+    Connection12 --> ConnectionItems14
+    __Item17[/"__Item[17∈3]<br />ᐸ14ᐳ"\]:::itemplan
+    ConnectionItems14 ==> __Item17
+    PgSelectSingle18{{"PgSelectSingle[18∈3]<br />ᐸeventsᐳ"}}:::plan
+    __Item17 --> PgSelectSingle18
+    PgClassExpression19{{"PgClassExpression[19∈3]<br />ᐸ__events__.”id”ᐳ"}}:::plan
+    PgSelectSingle18 --> PgClassExpression19
+    PgClassExpression22{{"PgClassExpression[22∈3]<br />ᐸ__events__.”code”ᐳ"}}:::plan
+    PgSelectSingle18 --> PgClassExpression22
+    Lambda23{{"Lambda[23∈3]<br />ᐸEvent_typeNameFromTypeᐳ"}}:::plan
+    PgClassExpression22 --> Lambda23
+    PgClassExpression36{{"PgClassExpression[36∈3]<br />ᐸ__events__.”actor”ᐳ"}}:::plan
+    PgSelectSingle18 --> PgClassExpression36
+    PgClassExpression38{{"PgClassExpression[38∈3]<br />ᐸ__events__.”created_at”ᐳ"}}:::plan
+    PgClassExpression36 o--o PgClassExpression38
+    PgSelect25[["PgSelect[25∈5]<br />ᐸpaid_eventsᐳ<br />ᐳPaidEvent<br />More deps:<br />- Object[11]"]]:::plan
+    PgClassExpression19 --> PgSelect25
+    List41{{"List[41∈5]<br />ᐸ40,19ᐳ<br />ᐳPaidEvent<br />More deps:<br />- Constantᐸ'paid_events'ᐳ[40]"}}:::plan
+    PgClassExpression19 --> List41
+    First29{{"First[29∈5]^"}}:::plan
+    PgSelectRows30[["PgSelectRows[30∈5]^"]]:::plan
+    PgSelectRows30 --> First29
+    PgSelect25 --> PgSelectRows30
+    PgSelectSingle31{{"PgSelectSingle[31∈5]^<br />ᐸpaid_eventsᐳ"}}:::plan
+    First29 --> PgSelectSingle31
+    Lambda42{{"Lambda[42∈5]^<br />ᐸbase64JSONEncodeᐳ"}}:::plan
+    List41 --> Lambda42
+    PgClassExpression46{{"PgClassExpression[46∈5]^<br />ᐸ__paid_eve..._.”amount”ᐳ"}}:::plan
+    PgSelectSingle31 --> PgClassExpression46
+    List44{{"List[44∈6]<br />ᐸ43,19ᐳ<br />ᐳEventDefault<br />More deps:<br />- Constantᐸ'EventDefault'ᐳ[43]"}}:::plan
+    PgClassExpression19 --> List44
+    Lambda45{{"Lambda[45∈6]^<br />ᐸbase64JSONEncodeᐳ"}}:::plan
+    List44 --> Lambda45
+
+    %% define steps
+    classDef bucket0 stroke:#696969
+    class Bucket0,__Value2,PgSelect8,Access9,Access10,Object11,Connection12,ConnectionItems14 bucket0
+    classDef bucket1 stroke:#00bfff
+    class Bucket1 bucket1
+    classDef bucket3 stroke:#ffa500
+    class Bucket3,__Item17,PgSelectSingle18,PgClassExpression19,PgClassExpression22,Lambda23,PgClassExpression36,PgClassExpression38 bucket3
+    classDef bucket4 stroke:#0000ff
+    class Bucket4 bucket4
+    classDef bucket5 stroke:#7fff00
+    class Bucket5,PgSelect25,First29,PgSelectRows30,PgSelectSingle31,List41,Lambda42,PgClassExpression46 bucket5
+    classDef bucket6 stroke:#ff1493
+    class Bucket6,List44,Lambda45 bucket6
+

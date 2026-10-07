@@ -1,0 +1,18 @@
+## expect(errors).toBeFalsy()
+#> schema: ["polymorphic_default"]
+
+{
+  allEvents {
+    nodes {
+      __typename
+      id
+      code
+      actor
+      createdAt
+      nodeId
+      ... on PaidEvent {
+        amount
+      }
+    }
+  }
+}

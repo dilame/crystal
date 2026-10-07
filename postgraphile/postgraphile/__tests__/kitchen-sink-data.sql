@@ -1212,3 +1212,16 @@ insert into function_returning_enum.applicants(
 insert into cjk."期间" (id, "期间") values
   (1, 21),
   (2, 22);
+
+--------------------------------------------------------------------------------
+
+delete from polymorphic_default.paid_events cascade;
+delete from polymorphic_default.events cascade;
+
+insert into polymorphic_default.events (id, code, created_at, actor) values
+  (1, 'CREATED',  '2020-01-01T00:00:00Z', 'Alice'),
+  (2, 'PAID',     '2020-01-02T00:00:00Z', 'Bob'),
+  (3, 'REFUNDED', '2020-01-03T00:00:00Z', 'Carol');
+
+insert into polymorphic_default.paid_events (id, amount) values
+  (2, 100.00);

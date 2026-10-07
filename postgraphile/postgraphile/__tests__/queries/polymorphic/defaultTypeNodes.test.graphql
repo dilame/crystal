@@ -1,0 +1,26 @@
+## expect(errors).toBeFalsy()
+#> schema: ["polymorphic_default"]
+
+{
+  created: node(nodeId: "WyJFdmVudERlZmF1bHQiLDFd") {
+    __typename
+    ... on Event {
+      id
+      code
+      actor
+      nodeId
+    }
+  }
+  paid: node(nodeId: "WyJwYWlkX2V2ZW50cyIsMl0=") {
+    __typename
+    ... on Event {
+      id
+      code
+      actor
+      nodeId
+    }
+    ... on PaidEvent {
+      amount
+    }
+  }
+}

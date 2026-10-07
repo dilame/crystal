@@ -2594,3 +2594,39 @@ create table scifi."Accessory" (
   "Name" varchar(200) not null,
   "Id" integer not null primary key
 );
+
+--------------------------------------------------------------------------------
+-- Relational polymorphism with a default type (`@defaultType`): discriminator
+-- values with no matching `@type` resolve to a single default object type that
+-- implements the interface and exposes only the shared attributes.
+--------------------------------------------------------------------------------
+
+create schema polymorphic_default;
+
+create type polymorphic_default.event_code as enum (
+  'CREATED',
+  'PAID',
+  'REFUNDED'
+);
+
+create table polymorphic_default.events (
+  id serial primary key,
+
+  -- This column is used to tell us which table we need to join to
+  code polymorphic_default.event_code not null,
+
+  -- Shared attributes (also 'id'):
+  created_at timestamptz not null default now(),
+  actor text
+);
+
+create table polymorphic_default.paid_events (
+  id int primary key references polymorphic_default.events on delete cascade,
+  amount numeric not null
+);
+
+comment on table polymorphic_default.events is $$
+  @interface mode:relational type:code
+  @defaultType
+  @type PAID references:paid_events
+  $$;

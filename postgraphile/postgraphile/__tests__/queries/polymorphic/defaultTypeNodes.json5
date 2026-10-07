@@ -1,0 +1,17 @@
+{
+  created: {
+    __typename: "EventDefault",
+    id: 1,
+    code: "CREATED",
+    actor: "Alice",
+    nodeId: "WyJFdmVudERlZmF1bHQiLDFd",
+  },
+  paid: {
+    __typename: "PaidEvent",
+    id: 2,
+    code: "PAID",
+    actor: "Bob",
+    nodeId: "WyJwYWlkX2V2ZW50cyIsMl0=",
+    amount: "100.00",
+  },
+}

@@ -4144,7 +4144,7 @@ const SingleTableTopic_rootTopicPlan = $record => otherSource_single_table_items
 const SingleTableItem_typeNameFromType = ((interfaceTypeName, polymorphism) => {
   function typeNameFromType(typeVal) {
     if (typeof typeVal !== "string") return null;
-    return polymorphism.types[typeVal]?.name ?? null;
+    return polymorphism.types[typeVal]?.name ?? (polymorphism.mode === "relational" ? polymorphism.defaultType?.name : undefined) ?? null;
   }
   typeNameFromType.displayName = `${interfaceTypeName}_typeNameFromType`;
   return typeNameFromType;
@@ -4696,7 +4696,7 @@ const relational_items_pkColumnsByRelatedCodecName = Object.fromEntries([["relat
 const RelationalItem_typeNameFromType = ((interfaceTypeName, polymorphism) => {
   function typeNameFromType(typeVal) {
     if (typeof typeVal !== "string") return null;
-    return polymorphism.types[typeVal]?.name ?? null;
+    return polymorphism.types[typeVal]?.name ?? (polymorphism.mode === "relational" ? polymorphism.defaultType?.name : undefined) ?? null;
   }
   typeNameFromType.displayName = `${interfaceTypeName}_typeNameFromType`;
   return typeNameFromType;
@@ -5059,7 +5059,7 @@ const resource_collectionsPgResource = registry.pgResources["collections"];
 const Collection_typeNameFromType = ((interfaceTypeName, polymorphism) => {
   function typeNameFromType(typeVal) {
     if (typeof typeVal !== "string") return null;
-    return polymorphism.types[typeVal]?.name ?? null;
+    return polymorphism.types[typeVal]?.name ?? (polymorphism.mode === "relational" ? polymorphism.defaultType?.name : undefined) ?? null;
   }
   typeNameFromType.displayName = `${interfaceTypeName}_typeNameFromType`;
   return typeNameFromType;
@@ -17626,6 +17626,12 @@ export const interfaces = {
       return {
         $__typename,
         planForType(type) {
+          if (spec_relationalItems.polymorphism.mode === "relational" && spec_relationalItems.polymorphism.defaultType && type.name === spec_relationalItems.polymorphism.defaultType.name) {
+            // The default type exposes only the base
+            // table's shared attributes, so it is planned
+            // directly from the base record.
+            return $base;
+          }
           const spec = Object.values(spec_relationalItems.polymorphism.types).find(s => s.name === type.name);
           if (!spec) {
             throw new Error(`${this} Could not find matching name for relational polymorphic '${type.name}'`);

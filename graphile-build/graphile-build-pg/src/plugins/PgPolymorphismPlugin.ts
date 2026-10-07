@@ -104,6 +104,10 @@ declare global {
       isPgPolymorphicTableType?: boolean;
       pgPolymorphism?: PgCodecPolymorphism<string>;
     }
+    interface Inflection {
+      /** The name of the object type that unmatched relational polymorphism values resolve to. */
+      pgPolymorphismDefaultTypeName(pgCodec: PgCodec): string;
+    }
     interface ScopeObject {
       pgPolymorphism?: PgCodecPolymorphism<string>;
       pgPolymorphicSingleTableType?: {
@@ -159,6 +163,15 @@ export const PgPolymorphismPlugin: GraphileConfig.Plugin = {
   description: "Adds polymorphism",
   version,
   after: ["smart-tags", "PgTablesPlugin", "PgCodecsPlugin", "PgBasicsPlugin"],
+  inflection: {
+    add: {
+      pgPolymorphismDefaultTypeName(_options, codec) {
+        return this.upperCamelCase(
+          `${this._singularizedCodecName(codec)}-default`,
+        );
+      },
+    },
+  },
   gather: gatherConfig({
     namespace: "pgPolymorphism",
     initialCache() {
@@ -350,6 +363,17 @@ export const PgPolymorphismPlugin: GraphileConfig.Plugin = {
                 mode: "relational",
                 typeAttributes: [type],
                 types,
+                ...(extensions.tags?.defaultType
+                  ? {
+                      defaultType: {
+                        // `spec` becomes the codec; the inflector only reads
+                        // its name.
+                        name: info.inflection.pgPolymorphismDefaultTypeName(
+                          spec as unknown as PgCodec,
+                        ),
+                      },
+                    }
+                  : null),
               };
               break;
             }
@@ -954,6 +978,20 @@ export const PgPolymorphismPlugin: GraphileConfig.Plugin = {
                     handler,
                   });
                 }
+                const defaultType = codec.polymorphism.defaultType;
+                if (defaultType) {
+                  // Records that resolve to the default type are the base
+                  // table records, so their node IDs use the base table's
+                  // primary key.
+                  const handler = build.getNodeIdHandler?.(defaultType.name);
+                  if (!handler) {
+                    return null;
+                  }
+                  details.push({
+                    remotePkAttributes: tablePkAttributes,
+                    handler,
+                  });
+                }
                 const handlers = details.map((d) => d.handler);
                 exportNameHint(handlers, `handlers_${codec.name}`);
                 return {
@@ -1091,7 +1129,13 @@ export const PgPolymorphismPlugin: GraphileConfig.Plugin = {
                   (interfaceTypeName, polymorphism) => {
                     function typeNameFromType(typeVal: unknown) {
                       if (typeof typeVal !== "string") return null;
-                      return polymorphism.types[typeVal]?.name ?? null;
+                      return (
+                        polymorphism.types[typeVal]?.name ??
+                        (polymorphism.mode === "relational"
+                          ? polymorphism.defaultType?.name
+                          : undefined) ??
+                        null
+                      );
                     }
                     typeNameFromType.displayName = `${interfaceTypeName}_typeNameFromType`;
                     return typeNameFromType;
@@ -1318,6 +1362,16 @@ export const PgPolymorphismPlugin: GraphileConfig.Plugin = {
                           return {
                             $__typename,
                             planForType(type) {
+                              if (
+                                polymorphism.mode === "relational" &&
+                                polymorphism.defaultType &&
+                                type.name === polymorphism.defaultType.name
+                              ) {
+                                // The default type exposes only the base
+                                // table's shared attributes, so it is planned
+                                // directly from the base record.
+                                return $base;
+                              }
                               const spec = Object.values(
                                 polymorphism.types,
                               ).find((s) => s.name === type.name);
@@ -1523,6 +1577,90 @@ return function (access, inhibitOnNull) {
                         ...(deprecationReason ? { deprecationReason } : null),
                       });
                     }
+                  }
+                }
+                if (
+                  polymorphism.mode === "relational" &&
+                  polymorphism.defaultType
+                ) {
+                  const defaultTypeName = polymorphism.defaultType.name;
+                  build.registerObjectType(
+                    defaultTypeName,
+                    {
+                      pgCodec: codec,
+                      isPgClassType: true,
+                      pgPolymorphism: polymorphism,
+                    },
+                    () => ({
+                      assertStep: assertPgClassSingleStep,
+                      description: codec.description,
+                      interfaces: () => [
+                        build.getTypeByName(
+                          interfaceTypeName,
+                        ) as GraphQLInterfaceType,
+                      ],
+                    }),
+                    `PgPolymorphismPlugin relational default type for ${codec.name}`,
+                  );
+                  if (
+                    build.registerNodeIdHandler &&
+                    nodeable &&
+                    resource &&
+                    pk
+                  ) {
+                    const deprecationReason = tagToString(
+                      codec.extensions?.tags?.deprecation ??
+                        resource?.extensions?.tags?.deprecated,
+                    );
+                    build.registerNodeIdHandler({
+                      typeName: defaultTypeName,
+                      codec: build.getNodeIdCodec!(
+                        codec.extensions?.tags?.nodeIdCodec ??
+                          resource?.extensions?.tags?.nodeIdCodec ??
+                          build.options?.defaultNodeIdCodec ??
+                          "base64JSON",
+                      ),
+                      plan: EXPORTABLE(
+                        (constant, defaultTypeName, list, pk) => ($record: PgSelectSingleStep) => {
+                            return list([
+                              constant(defaultTypeName, false),
+                              ...pk.map((attribute) => $record.get(attribute)),
+                            ]);
+                          },
+                        [constant, defaultTypeName, list, pk],
+                      ),
+                      getSpec: EXPORTABLE(
+                        (access, inhibitOnNull, pk) =>
+                          ($list: ListStep<any[]>) => {
+                            const spec = pk.reduce((memo, attribute, index) => {
+                              memo[attribute] = inhibitOnNull(
+                                access($list, [index + 1]),
+                              );
+                              return memo;
+                            }, Object.create(null));
+                            return spec;
+                          },
+                        [access, inhibitOnNull, pk],
+                      ),
+                      getIdentifiers: EXPORTABLE(
+                        () => (value) => {
+                          return value.slice(1);
+                        },
+                        [],
+                        "getIdentifiers",
+                      ),
+                      get: EXPORTABLE(
+                        (resource) => (spec: any) => resource.get(spec),
+                        [resource],
+                      ),
+                      match: EXPORTABLE(
+                        (defaultTypeName) => (obj) => {
+                          return obj[0] === defaultTypeName;
+                        },
+                        [defaultTypeName],
+                      ),
+                      ...(deprecationReason ? { deprecationReason } : null),
+                    });
                   }
                 }
               } else if (polymorphism.mode === "union") {
@@ -1766,6 +1904,17 @@ return function (access, inhibitOnNull) {
                           type.name,
                         ) as GraphQLNamedType;
                         types.push(t);
+                      }
+                      if (
+                        polymorphism.mode === "relational" &&
+                        polymorphism.defaultType
+                      ) {
+                        // Force the default type to be built
+                        types.push(
+                          build.getTypeByName(
+                            polymorphism.defaultType.name,
+                          ) as GraphQLNamedType,
+                        );
                       }
                     }
                   }

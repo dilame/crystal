@@ -1,0 +1,31 @@
+{
+  allEvents: {
+    nodes: [
+      {
+        __typename: "EventDefault",
+        id: 1,
+        code: "CREATED",
+        actor: "Alice",
+        createdAt: "2019-12-31T20:00:00.000000-04:00",
+        nodeId: "WyJFdmVudERlZmF1bHQiLDFd",
+      },
+      {
+        __typename: "PaidEvent",
+        id: 2,
+        code: "PAID",
+        actor: "Bob",
+        createdAt: "2020-01-01T20:00:00.000000-04:00",
+        nodeId: "WyJwYWlkX2V2ZW50cyIsMl0=",
+        amount: "100.00",
+      },
+      {
+        __typename: "EventDefault",
+        id: 3,
+        code: "REFUNDED",
+        actor: "Carol",
+        createdAt: "2020-01-02T20:00:00.000000-04:00",
+        nodeId: "WyJFdmVudERlZmF1bHQiLDNd",
+      },
+    ],
+  },
+}
